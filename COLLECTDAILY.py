@@ -3,6 +3,10 @@ import os
 import xml.etree.ElementTree as ET
 
 cookie_value = os.getenv('COOKIE')
+if not cookie_value:
+    print("未找到COOKIE，请检查环境变量设置")
+    exit(1)
+
 cookies = {cookie.split('=')[0]: cookie.split('=')[1] for cookie in cookie_value.split('; ')}
 
 headers = {
@@ -11,20 +15,6 @@ headers = {
     'dnt': '1',
     'priority': 'u=0, i',
     'referer': 'https://www.south-plus.net/plugin.php?H_name-tasks-actions-newtasks.html.html',
-    'sec-ch-ua': '"Google Chrome";v="127", "Chromium";v="127", "Not.A/Brand";v="24"',
-    'sec-ch-ua-arch': '"x86"',
-    'sec-ch-ua-bitness': '"64"',
-    'sec-ch-ua-full-version': '"127.0.6533.89"',
-    'sec-ch-ua-full-version-list': '"Google Chrome";v="127.0.6533.89", "Chromium";v="127.0.6533.89", "Not.A/Brand";v="24.0.0.0"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-model': '""',
-    'sec-ch-ua-platform': '"Windows"',
-    'sec-ch-ua-platform-version': '"15.0.0"',
-    'sec-fetch-dest': 'iframe',
-    'sec-fetch-mode': 'navigate',
-    'sec-fetch-site': 'same-origin',
-    'sec-fetch-user': '?1',
-    'upgrade-insecure-requests': '1',
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
 }
 
@@ -37,19 +27,26 @@ params = {
     'verify': '5af36471',
 }
 
-
-
 response = requests.get('https://www.south-plus.net/plugin.php', params=params, cookies=cookies, headers=headers)
 
-root = ET.fromstring(response.text)
-cdata = root.text
-# 提取变量值
-values = cdata.split('\t')
-if len(values) == 3:
-    action = values[0]
-    message = values[1]
-    number = values[2]
+# 打印响应内容以方便调试
+print("Response Text:\n", response.text)
 
-    print('日常-' + message)
-else:
-    print("XML格式不正确，请检查COOKIE设置")
+try:
+    root = ET.fromstring(response.text)
+    cdata = root.text
+
+    if cdata:
+        values = cdata.split('\t')
+        if len(values) == 3:
+            action = values[0]
+            message = values[1]
+            number = values[2]
+            print('日常-' + message)
+        else:
+            print("XML格式不正确，返回的数据未达到预期结构")
+    else:
+        print("XML根节点文本为空")
+
+except ET.ParseError as e:
+    print(f"XML解析错误: {e}")
